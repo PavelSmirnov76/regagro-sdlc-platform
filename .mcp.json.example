@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "sdlc-platform": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/pavelsmirnov/projects/regagro/sdlc-platform/mcp",
+        "run",
+        "sdlc-mcp"
+      ],
+      "env": {
+        "SDLC_ROOT": "/Users/pavelsmirnov/projects/regagro/sdlc-platform/sdlc",
+        "APP_REPO_PATH": "/Users/pavelsmirnov/projects/regagro/agro_system"
+      }
+    }
+  }
+}

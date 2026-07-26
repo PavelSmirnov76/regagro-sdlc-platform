@@ -1,0 +1,21 @@
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Machine-local uv settings (workaround for a root-owned ~/.local on this host;
+# not needed on a normal machine — see docs/SETUP.md)
+mcp/uv.toml
+
+# Runtime state: audit DB + session transcripts (durable data, not source)
+mcp/var/
+
+# Secrets / local config
+.env
+mcp/.env
+*.local
+
+# OS
+.DS_Store

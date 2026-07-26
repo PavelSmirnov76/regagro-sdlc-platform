@@ -1,0 +1,31 @@
+[project]
+name = "sdlc-mcp"
+version = "0.1.0"
+description = "MCP server that guards the SDLC law (freeze/entomb/PRD-in-place), audits every change, and drives the REGAGRO Livestock development lifecycle."
+readme = "README.md"
+authors = [
+    { name = "smirnovPavel76ru", email = "smirnovPavel76ru@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.28.1",
+]
+
+[project.scripts]
+sdlc-mcp = "sdlc_mcp.server:main"
+sdlc-audit = "sdlc_mcp.audit.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
