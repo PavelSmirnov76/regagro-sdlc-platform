@@ -10,6 +10,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 
 from . import prompts
+from .config import load_config
 from .service import SdlcService
 
 mcp = FastMCP("sdlc-platform")
@@ -325,7 +326,13 @@ def tdd_task() -> str:
 
 
 def main() -> None:
-    mcp.run()
+    cfg = load_config()
+    if cfg.transport == "stdio":
+        mcp.run()
+        return
+    from .transport import run_http
+
+    run_http(mcp, cfg)
 
 
 if __name__ == "__main__":  # pragma: no cover

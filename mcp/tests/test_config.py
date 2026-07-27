@@ -22,3 +22,29 @@ def test_defaults_point_into_repo(tmp_path):
     assert cfg.sdlc_root.name == "sdlc"
     assert cfg.audit_db.name == "audit.db"
     assert cfg.transcript_dir.name == "transcripts"
+
+
+def test_transport_defaults_to_stdio():
+    cfg = load_config({"ACTOR_HUMAN": "x"})
+    assert cfg.transport == "stdio"
+    assert cfg.host == "127.0.0.1"
+    assert cfg.port == 8000
+    assert cfg.auth_token is None
+    assert cfg.allowed_hosts == ()
+
+
+def test_transport_from_env():
+    cfg = load_config(
+        {
+            "MCP_TRANSPORT": "SSE",  # normalised to lower-case
+            "MCP_HOST": "0.0.0.0",
+            "MCP_PORT": "9001",
+            "MCP_AUTH_TOKEN": "s3cret",
+            "MCP_ALLOWED_HOSTS": "ra-mcp-4.skobeltsyn.com, localhost:*",
+        }
+    )
+    assert cfg.transport == "sse"
+    assert cfg.host == "0.0.0.0"
+    assert cfg.port == 9001
+    assert cfg.auth_token == "s3cret"
+    assert cfg.allowed_hosts == ("ra-mcp-4.skobeltsyn.com", "localhost:*")

@@ -47,6 +47,17 @@ class Config:
     telegram_bot_token: str | None
     telegram_chat_id: str | None
     gh_token: str | None
+    # Transport: "stdio" (Claude Code, default) or a network transport
+    # ("sse" / "streamable-http") for a shared server behind nginx.
+    transport: str = "stdio"
+    host: str = "127.0.0.1"
+    port: int = 8000
+    # Token required on the connection URL (?token=…) / as a Bearer header when
+    # served over the network. None => the gate is not installed (local only).
+    auth_token: str | None = None
+    # Hosts allowed by DNS-rebinding protection. Empty => protection disabled
+    # (the token gate + TLS/nginx are the boundary for a public connector).
+    allowed_hosts: tuple[str, ...] = ()
 
 
 def _maybe_load_dotenv() -> None:
@@ -72,6 +83,16 @@ def load_config(env: dict | None = None) -> Config:
     ).expanduser()
     app_repo = env.get("APP_REPO_PATH")
 
+    transport = (env.get("MCP_TRANSPORT") or "stdio").strip().lower()
+    host = env.get("MCP_HOST") or "127.0.0.1"
+    port = int(env.get("MCP_PORT") or 8000)
+    auth_token = env.get("MCP_AUTH_TOKEN") or None
+    allowed_hosts = tuple(
+        h.strip()
+        for h in (env.get("MCP_ALLOWED_HOSTS") or "").split(",")
+        if h.strip()
+    )
+
     return Config(
         sdlc_root=sdlc_root,
         audit_db=audit_db,
@@ -82,4 +103,9 @@ def load_config(env: dict | None = None) -> Config:
         telegram_bot_token=env.get("TELEGRAM_BOT_TOKEN"),
         telegram_chat_id=env.get("TELEGRAM_CHAT_ID"),
         gh_token=env.get("GH_TOKEN"),
+        transport=transport,
+        host=host,
+        port=port,
+        auth_token=auth_token,
+        allowed_hosts=allowed_hosts,
     )
