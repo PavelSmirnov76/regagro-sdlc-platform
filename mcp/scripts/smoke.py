@@ -11,16 +11,24 @@ It connects as a real MCP client, lists the tools, and calls two read-only ones
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
+from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 
 async def main() -> None:
+    # The engine is project-agnostic; smoke it against the bundled example tree
+    # unless the caller already pointed SDLC_ROOT at a real project.
+    repo = Path(__file__).resolve().parents[2]
+    env = dict(os.environ)
+    env.setdefault("SDLC_ROOT", str(repo / "examples" / "mini-sdlc"))
     params = StdioServerParameters(
         command=sys.executable,
         args=["-m", "sdlc_mcp.server"],
+        env=env,
     )
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:

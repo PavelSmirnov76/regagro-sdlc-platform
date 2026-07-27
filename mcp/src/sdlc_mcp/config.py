@@ -76,7 +76,12 @@ def load_config(env: dict | None = None) -> Config:
     repo, mcp = _repo_root(), _mcp_root()
     var = mcp / "var"
 
-    sdlc_root = Path(env.get("SDLC_ROOT") or (repo / "sdlc")).expanduser().resolve()
+    # The engine is project-agnostic: real use sets SDLC_ROOT to the target
+    # project's sdlc/ tree (e.g. .../agro_system/sdlc). The bundled example is
+    # only a fallback for local smoke/demo.
+    sdlc_root = Path(
+        env.get("SDLC_ROOT") or (repo / "examples" / "mini-sdlc")
+    ).expanduser().resolve()
     audit_db = Path(env.get("AUDIT_DB") or (var / "audit.db")).expanduser()
     transcript_dir = Path(
         env.get("TRANSCRIPT_DIR") or (var / "transcripts")

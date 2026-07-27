@@ -9,7 +9,7 @@
         "sdlc-mcp"
       ],
       "env": {
-        "SDLC_ROOT": "/Users/pavelsmirnov/projects/regagro/sdlc-platform/sdlc",
+        "SDLC_ROOT": "/Users/pavelsmirnov/projects/regagro/agro_system/sdlc",
         "APP_REPO_PATH": "/Users/pavelsmirnov/projects/regagro/agro_system"
       }
     }

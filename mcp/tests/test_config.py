@@ -19,7 +19,9 @@ def test_load_config_from_env(tmp_path):
 
 def test_defaults_point_into_repo(tmp_path):
     cfg = load_config({"ACTOR_HUMAN": "x"})
-    assert cfg.sdlc_root.name == "sdlc"
+    # No project tree of its own: the default falls back to the bundled example.
+    assert cfg.sdlc_root.name == "mini-sdlc"
+    assert cfg.sdlc_root.parent.name == "examples"
     assert cfg.audit_db.name == "audit.db"
     assert cfg.transcript_dir.name == "transcripts"
 

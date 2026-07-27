@@ -64,7 +64,7 @@ Code (можно и в самом `agro_system`, чтобы вести код п
                "/Users/pavelsmirnov/projects/regagro/sdlc-platform/mcp",
                "run", "sdlc-mcp"],
       "env": {
-        "SDLC_ROOT": "/Users/pavelsmirnov/projects/regagro/sdlc-platform/sdlc",
+        "SDLC_ROOT": "/Users/pavelsmirnov/projects/regagro/agro_system/sdlc",
         "APP_REPO_PATH": "/Users/pavelsmirnov/projects/regagro/agro_system"
       }
     }
@@ -74,12 +74,15 @@ Code (можно и в самом `agro_system`, чтобы вести код п
 
 `--directory` важен: uv должен стартовать в `mcp/`, чтобы подхватить `uv.toml`.
 Если `uv` не на PATH у Claude Code — укажи абсолютный путь `/opt/homebrew/bin/uv`.
+`SDLC_ROOT`/`APP_REPO_PATH` указывают на **целевой проект** (его дерево `sdlc/` и
+корень репозитория) — движок своего дерева не носит. Для быстрой проверки без
+проекта можно не задавать `SDLC_ROOT`: возьмётся `examples/mini-sdlc`.
 
 ### Способ Б — команда
 
 ```bash
 claude mcp add sdlc-platform \
-  -e SDLC_ROOT=/Users/pavelsmirnov/projects/regagro/sdlc-platform/sdlc \
+  -e SDLC_ROOT=/Users/pavelsmirnov/projects/regagro/agro_system/sdlc \
   -e APP_REPO_PATH=/Users/pavelsmirnov/projects/regagro/agro_system \
   -- uv --directory /Users/pavelsmirnov/projects/regagro/sdlc-platform/mcp run sdlc-mcp
 ```
@@ -194,12 +197,19 @@ Connectors** как кастомный коннектор по URL `https://<д�
 
 ### 6.1 Код и окружение на сервере
 
+Два клона: **движок** (эта платформа) и **целевой проект** (его код + дерево
+`sdlc/`). Оба — через GitHub (deploy key). Для лабы разумно клонировать **форк**
+проекта, чтобы MCP не пушил в боевой репозиторий.
+
 ```bash
-# репозиторий платформы (через GitHub, deploy key — приложение остаётся своим репо)
+# движок
 git clone git@github.com:<owner>/regagro-sdlc-platform.git /root/sdlc-platform
 cd /root/sdlc-platform/mcp
 uv sync                          # Python 3.11; ~/.local не root-owned -> uv.toml не нужен
 uv run pytest                    # зелёные
+
+# целевой проект (форк для лабы; deploy key с записью нужен для PR — раздел 4.1)
+git clone git@github.com:<you>/agro_system.git /root/agro_system
 ```
 
 ### 6.2 `mcp/.env` — сетевой транспорт + токен
@@ -213,7 +223,9 @@ MCP_TRANSPORT=sse
 MCP_HOST=127.0.0.1
 MCP_PORT=8000
 MCP_AUTH_TOKEN=$(openssl rand -hex 32)
-SDLC_ROOT=/root/sdlc-platform/sdlc
+# Движок наводится на ДЕРЕВО ПРОЕКТА (не платформы) — единый источник правды.
+SDLC_ROOT=/root/agro_system/sdlc
+APP_REPO_PATH=/root/agro_system
 EOF
 chmod 600 /root/sdlc-platform/mcp/.env
 ```
@@ -222,6 +234,7 @@ chmod 600 /root/sdlc-platform/mcp/.env
 nginx. Без `MCP_AUTH_TOKEN` транспорт поднимется **без гейта** — на публичном
 сервере токен обязателен. По умолчанию DNS-rebinding защита отключена (граница —
 токен + TLS); чтобы пинить хосты, задай `MCP_ALLOWED_HOSTS=<домен>`.
+`SDLC_ROOT`/`APP_REPO_PATH` указывают на клон проекта — там и код, и `sdlc/`.
 
 ### 6.3 systemd-сервис
 
