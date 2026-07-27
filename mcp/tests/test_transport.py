@@ -75,6 +75,16 @@ def test_gate_rejects_wrong_token():
         assert c.get("/sse?token=nope").status_code == 401
 
 
+def test_gate_401_has_no_oauth_challenge():
+    # A `WWW-Authenticate: Bearer` challenge makes claude.ai's connector try
+    # OAuth Dynamic Client Registration instead of connecting with the ?token=
+    # URL, which fails. The 401 must NOT advertise an auth challenge.
+    with _client() as c:
+        r = c.get("/sse")
+        assert r.status_code == 401
+        assert "www-authenticate" not in {k.lower() for k in r.headers}
+
+
 def test_gate_allows_query_token():
     with _client() as c:
         r = c.get("/sse?token=secret")

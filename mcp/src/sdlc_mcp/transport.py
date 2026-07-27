@@ -82,19 +82,17 @@ class TokenAuthMiddleware:
         if typ == "websocket":
             await send({"type": "websocket.close", "code": 1008})
             return
+        # A bare 401 WITHOUT a `WWW-Authenticate: Bearer` challenge. That header
+        # tells an OAuth-capable client (claude.ai's connector registration) to
+        # discover an authorization server and do Dynamic Client Registration —
+        # which fails here, because we authenticate by token-in-URL, not OAuth
+        # ("Couldn't register with … sign-in service"). Mirroring a known-good
+        # token-in-URL server, the challenge is omitted so the client simply
+        # connects with the ?token= URL.
         await send(
-            {
-                "type": "http.response.start",
-                "status": 401,
-                "headers": [
-                    (b"content-type", b"application/json"),
-                    (b"www-authenticate", b"Bearer"),
-                ],
-            }
+            {"type": "http.response.start", "status": 401, "headers": []}
         )
-        await send(
-            {"type": "http.response.body", "body": b'{"error":"unauthorized"}'}
-        )
+        await send({"type": "http.response.body", "body": b""})
 
 
 def _apply_transport_security(mcp, config) -> None:
