@@ -3,11 +3,17 @@
 ## Слои
 
 ```
-Claude Code (агент, «мозг»)
-        │  MCP (stdio)
-        ▼
-server.py            FastMCP: tools / resources / prompts — тонкие обёртки
+Claude — «мозг» (claude.ai-коннектор  ИЛИ  локальный Claude Code)
         │
+        │  claude.ai: HTTPS → nginx (TLS) → transport.py (token-гейт) → SSE
+        │  локально:  stdio
+        ▼
+transport.py         сетевой транспорт: token-гейт (?token= / Bearer, 401 без
+        │            токена) поверх FastMCP sse_app / streamable_http_app;
+        │            /messages/ открыт (защищён session_id). stdio его минует.
+        ▼
+server.py            FastMCP: tools / resources / prompts — тонкие обёртки;
+        │            main() выбирает stdio или сеть по MCP_TRANSPORT
         ▼
 service.py           SdlcService: единственное место, где происходит мутация;
         │            каждая = закон + строка аудита + запись в транскрипт
@@ -35,7 +41,14 @@ service.py           SdlcService: единственное место, где п
   `git_ops`/`apk_build`/`telegram`; `factory.build(cfg)` выбирает real/fake.
 - **`service.py`** — оркестрация: `create_*`, `entomb_artifact`, `prd_*`,
   `open_pull_request`, `build_and_deliver_apk`, `validate`, `audit_history`.
-- **`server.py`** — регистрация инструментов/ресурсов/промптов FastMCP.
+- **`server.py`** — регистрация инструментов/ресурсов/промптов FastMCP;
+  `main()` по `MCP_TRANSPORT` выбирает stdio (Claude Code) или сеть.
+- **`transport.py`** — сетевой транспорт для общего сервера: `TokenAuthMiddleware`
+  (токен из `?token=` или `Authorization: Bearer`, иначе 401) поверх
+  `sse_app`/`streamable_http_app`; путь `/messages/` оставлен открытым — он
+  защищён неугадываемым `session_id`, который выдаётся только после
+  аутентифицированного `/sse`. DNS-rebinding защита ослаблена для публичного
+  хоста (граница — токен + TLS/nginx) либо пинится через `MCP_ALLOWED_HOSTS`.
 
 ## Поток данных при создании артефакта
 
@@ -60,5 +73,7 @@ service.py           SdlcService: единственное место, где п
 
 - Новый тип артефакта: добавить в `ids.FILE_ID_TYPES`, `templates`, метод
   `create_*` в сервисе, инструмент в сервере — с тестом (red-green).
-- HTTP/SSE-транспорт (для сервера) — тот же `FastMCP`, другой `mcp.run(...)`.
-- Встроенный agent-loop (если понадобится) — поверх `SdlcService`, не вместо него.
+- Сетевой транспорт (SSE / streamable-http) с токен-гейтом — уже есть в
+  `transport.py`; включается `MCP_TRANSPORT=sse` (см. `config.py`, `docs/SETUP.md` §6).
+- Встроенный agent-loop не нужен: мозг — внешний Claude (claude.ai/Claude Code),
+  а не отдельный агент внутри сервера. Расширять — инструментами поверх `SdlcService`.
