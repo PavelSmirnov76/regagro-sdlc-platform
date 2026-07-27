@@ -264,6 +264,32 @@ def prd_propose_edit(new_text: str, why: str) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Scaffold a new project
+# --------------------------------------------------------------------------- #
+@mcp.tool()
+def scaffold_project(
+    target: str,
+    container: str = "sdlc",
+    project_name: str = "Project",
+    force: bool = False,
+    dry_run: bool = False,
+    host_pointer: bool = True,
+) -> dict:
+    """Scaffold the numbered SDLC pipeline (0-vibes … 9-observation, per-stage
+    README/AGENTS/CLAUDE + RUNBOOK) into ``target`` — structure & conventions
+    only, no domain content. Use to start a new project on this workflow. Lands
+    in ``target/<container>`` (default ``sdlc``); ``{{PROJECT_NAME}}`` is filled
+    from ``project_name``; idempotent (skips existing unless ``force``, which
+    backs up first); a marked pointer is added to the host CLAUDE.md. Preview
+    with ``dry_run=True``. After scaffolding, do the adaptation pass (set the
+    stage list, prune unused stages/design targets)."""
+    return service().scaffold_project(
+        target=target, container=container, project_name=project_name,
+        force=force, dry_run=dry_run, host_pointer=host_pointer,
+    )
+
+
+# --------------------------------------------------------------------------- #
 # External actions (real when configured, otherwise recorded fakes)
 # --------------------------------------------------------------------------- #
 @mcp.tool()

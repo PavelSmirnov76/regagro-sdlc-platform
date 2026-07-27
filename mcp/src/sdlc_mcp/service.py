@@ -18,9 +18,12 @@ from .audit import db as audit_db
 from .audit import ledger
 from .config import Config, load_config
 from .integrations import factory as integrations_factory
+from pathlib import Path
+
 from .law import artifacts
 from .law import entomb as entomb_mod
 from .law import frontmatter, ids, prd
+from .law import scaffold as scaffold_mod
 from .law import templates
 from .law import validate as validate_mod
 from .transcript.session import SessionLog, new_session_id
@@ -369,6 +372,59 @@ class SdlcService:
         )
         self.log.append("prd_edited", why=why, history=self._rel(hist))
         return {"history": self._rel(hist)}
+
+    # -------------------------------------------------------------- scaffold
+    def scaffold_project(
+        self,
+        *,
+        target,
+        container="sdlc",
+        project_name="Project",
+        force=False,
+        dry_run=False,
+        host_pointer=True,
+    ) -> dict:
+        """Scaffold the numbered SDLC pipeline into a target repo (structure +
+        conventions only). Use to start a new project on this workflow."""
+        report = scaffold_mod.scaffold_tree(
+            Path(target),
+            container=container,
+            project_name=project_name,
+            force=force,
+            dry_run=dry_run,
+            host_pointer=host_pointer,
+        )
+        self._record(
+            action="scaffold_project",
+            summary=f"{project_name} -> {report.dest_root} "
+            f"({len(report.created)} files{', dry-run' if dry_run else ''})",
+            extra={
+                "target": str(target),
+                "container": report.container,
+                "created": len(report.created),
+                "skipped": len(report.skipped),
+                "backup": report.backup,
+                "host_pointer": report.host_pointer,
+                "dry_run": dry_run,
+            },
+        )
+        self.log.append(
+            "scaffold_project",
+            target=str(target),
+            container=report.container,
+            created=len(report.created),
+            skipped=len(report.skipped),
+            dry_run=dry_run,
+        )
+        return {
+            "dest_root": report.dest_root,
+            "container": report.container,
+            "created": report.created,
+            "skipped": report.skipped,
+            "backup": report.backup,
+            "host_pointer": report.host_pointer,
+            "dry_run": report.dry_run,
+        }
 
     # ----------------------------------------------------------- integrations
     def _integrations(self):

@@ -53,6 +53,16 @@ uv run sdlc-audit history    # история изменений
 Ключи для реальных PR/Telegram/APK — [`docs/SETUP.md`](docs/SETUP.md), раздел 4.
 Архитектура — [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+## Новый проект с нуля
+
+Инструмент **`scaffold_project`** разворачивает нумерованный SDLC-пайплайн
+(`0-vibes` … `9-observation` со stage-`README`/`AGENTS`/`CLAUDE` + `RUNBOOK`) в
+целевой репозиторий — только структура и конвенции, без доменного контента.
+Порт `Skills-main/skills/sdlc-scaffold`, шаблоны вложены в
+`mcp/src/sdlc_mcp/scaffold_templates/`. Идемпотентен (существующее пропускает,
+`force` бэкапит), в host `CLAUDE.md` добавляет указатель на пайплайн. Так участник
+из claude.ai может «настроить проект с нуля», а затем кодить его через MCP.
+
 > На этой машине `~/.local` принадлежит `root`, поэтому рядом лежит
 > машинно-специфичный `mcp/uv.toml` (в `.gitignore`), указывающий uv на writable
 > кэш и системный Python 3.11 (Homebrew). На нормальной машине он не нужен.
