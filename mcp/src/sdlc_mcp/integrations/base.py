@@ -38,7 +38,9 @@ class GitOps(Protocol):
 
 
 class ApkBuilder(Protocol):
-    def build(self, *, repo: str | None, flavor: str) -> ApkResult: ...
+    def build(
+        self, *, repo: str | None, flavor: str, mode: str = "release"
+    ) -> ApkResult: ...
 
 
 class TelegramSender(Protocol):

@@ -103,3 +103,18 @@ def test_open_pr_defaults_base_from_config(service, monkeypatch):
     assert fake.calls[-1][1]["base"] == service.cfg.app_base_branch == "develop"
     service.open_pull_request(title="T2", base="release-x")  # explicit wins
     assert fake.calls[-1][1]["base"] == "release-x"
+
+
+def test_build_apk_passes_mode(service, monkeypatch):
+    from sdlc_mcp.integrations import factory, fakes
+
+    fake = fakes.FakeApkBuilder()
+    monkeypatch.setattr(
+        factory,
+        "build",
+        lambda cfg: factory.Integrations(
+            fakes.FakeGitOps(), fake, fakes.FakeTelegramSender()
+        ),
+    )
+    service.build_and_deliver_apk(flavor="dev", mode="debug")
+    assert fake.calls[-1][1]["mode"] == "debug"

@@ -25,11 +25,11 @@ class FakeApkBuilder:
     def __init__(self) -> None:
         self.calls: list[tuple[str, dict]] = []
 
-    def build(self, *, repo, flavor) -> ApkResult:
-        self.calls.append(("build", dict(repo=repo, flavor=flavor)))
+    def build(self, *, repo, flavor, mode="release") -> ApkResult:
+        self.calls.append(("build", dict(repo=repo, flavor=flavor, mode=mode)))
         return ApkResult(
             ok=True,
-            apk_path=f"/fake/build/app-{flavor}-release.apk",
+            apk_path=f"/fake/build/app-{flavor}-{mode}.apk",
             flavor=flavor,
             detail="fake APK (no app repo / flutter configured)",
             used_fake=True,

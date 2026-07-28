@@ -363,10 +363,14 @@ def open_pull_request(
 
 
 @mcp.tool()
-def build_and_deliver_apk(flavor: str = "prod", caption: str | None = None) -> dict:
-    """Build the app APK (flutter) and deliver it to Telegram. Falls back to
-    fakes without app repo / bot credentials — see docs/SETUP.md."""
-    return service().build_and_deliver_apk(flavor=flavor, caption=caption)
+def build_and_deliver_apk(
+    flavor: str = "prod", caption: str | None = None, mode: str = "release"
+) -> dict:
+    """Build the app APK (flutter) and deliver it to Telegram. ``mode`` is
+    'release' or 'debug' — use 'debug' for a shareable build when no release
+    keystore is configured (debug is signed with the auto debug key). Falls back
+    to fakes without app repo / bot credentials — see docs/SETUP.md."""
+    return service().build_and_deliver_apk(flavor=flavor, caption=caption, mode=mode)
 
 
 # --------------------------------------------------------------------------- #

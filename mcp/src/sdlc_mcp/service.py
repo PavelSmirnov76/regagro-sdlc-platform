@@ -500,10 +500,10 @@ class SdlcService:
             "detail": res.detail, "used_fake": res.used_fake,
         }
 
-    def build_and_deliver_apk(self, *, flavor="prod", caption=None) -> dict:
+    def build_and_deliver_apk(self, *, flavor="prod", caption=None, mode="release") -> dict:
         repo = str(self.cfg.app_repo) if self.cfg.app_repo else None
         ig = self._integrations()
-        build = ig.apk.build(repo=repo, flavor=flavor)
+        build = ig.apk.build(repo=repo, flavor=flavor, mode=mode)
         delivery = None
         if build.ok and build.apk_path:
             delivery = ig.telegram.send_document(
@@ -511,7 +511,7 @@ class SdlcService:
             )
         self._record(
             action="build_and_deliver_apk",
-            summary=f"apk {flavor}",
+            summary=f"apk {flavor} ({mode})",
             extra={
                 "apk_path": build.apk_path,
                 "build_used_fake": build.used_fake,

@@ -62,3 +62,10 @@ def test_service_build_and_deliver_apk_fake_is_audited(service):
     assert res["build"]["used_fake"] is True
     assert res["delivery"]["used_fake"] is True
     assert any(r["action"] == "build_and_deliver_apk" for r in service.audit_history())
+
+
+def test_fake_apk_records_mode():
+    b = fakes.FakeApkBuilder()
+    res = b.build(repo=None, flavor="dev", mode="debug")
+    assert res.used_fake and res.apk_path.endswith("app-dev-debug.apk")
+    assert b.calls[-1][1]["mode"] == "debug"
