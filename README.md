@@ -51,7 +51,8 @@ uv run sdlc-audit history    # история изменений
 - **Claude Code (локально, stdio).** Регистрация подпроцессом — там же, раздел 3.
 
 Ключи для реальных PR/Telegram/APK — [`docs/SETUP.md`](docs/SETUP.md), раздел 4.
-Архитектура — [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Архитектура — [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Идеи по доработке
+(мультипроектность и др.) — [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Новый проект с нуля
 
