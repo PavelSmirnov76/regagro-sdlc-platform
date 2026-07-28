@@ -294,10 +294,12 @@ def scaffold_project(
 # --------------------------------------------------------------------------- #
 @mcp.tool()
 def open_pull_request(
-    title: str, body: str = "", base: str = "develop", head: str | None = None
+    title: str, body: str = "", base: str | None = None, head: str | None = None
 ) -> dict:
-    """Open a PR in the app repo (git push + gh pr create). Falls back to a
-    recorded fake if the app repo / gh aren't configured — see docs/SETUP.md."""
+    """Open a PR in the app repo (git push + gh pr create). ``base`` defaults to
+    the project's configured base branch (APP_BASE_BRANCH); ``head`` defaults to
+    the repo's current branch. Falls back to a recorded fake if the app repo /
+    gh aren't configured — see docs/SETUP.md."""
     return service().open_pull_request(title=title, body=body, base=base, head=head)
 
 

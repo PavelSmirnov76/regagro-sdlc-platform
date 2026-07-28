@@ -35,6 +35,14 @@ def test_transport_defaults_to_stdio():
     assert cfg.allowed_hosts == ()
 
 
+def test_app_base_branch_config():
+    assert load_config({"ACTOR_HUMAN": "x"}).app_base_branch == "develop"
+    assert (
+        load_config({"APP_BASE_BRANCH": "develop_shz_rewirte"}).app_base_branch
+        == "develop_shz_rewirte"
+    )
+
+
 def test_transport_from_env():
     cfg = load_config(
         {

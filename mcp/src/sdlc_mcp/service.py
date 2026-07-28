@@ -430,8 +430,9 @@ class SdlcService:
     def _integrations(self):
         return integrations_factory.build(self.cfg)
 
-    def open_pull_request(self, *, title, body="", base="develop", head=None) -> dict:
+    def open_pull_request(self, *, title, body="", base=None, head=None) -> dict:
         repo = str(self.cfg.app_repo) if self.cfg.app_repo else None
+        base = base or self.cfg.app_base_branch
         res = self._integrations().git.open_pull_request(
             repo=repo, base=base, head=head, title=title, body=body
         )

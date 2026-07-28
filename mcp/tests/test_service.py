@@ -86,3 +86,20 @@ def test_every_mutation_is_audited(service):
     service.prd_add_requirement("Ещё одно.")
     after = len(service.audit_history(limit=1000))
     assert after - before == 3
+
+
+def test_open_pr_defaults_base_from_config(service, monkeypatch):
+    from sdlc_mcp.integrations import factory, fakes
+
+    fake = fakes.FakeGitOps()
+    monkeypatch.setattr(
+        factory,
+        "build",
+        lambda cfg: factory.Integrations(
+            fake, fakes.FakeApkBuilder(), fakes.FakeTelegramSender()
+        ),
+    )
+    service.open_pull_request(title="T")  # no base -> config default
+    assert fake.calls[-1][1]["base"] == service.cfg.app_base_branch == "develop"
+    service.open_pull_request(title="T2", base="release-x")  # explicit wins
+    assert fake.calls[-1][1]["base"] == "release-x"

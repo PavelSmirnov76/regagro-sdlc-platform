@@ -58,6 +58,8 @@ class Config:
     # Hosts allowed by DNS-rebinding protection. Empty => protection disabled
     # (the token gate + TLS/nginx are the boundary for a public connector).
     allowed_hosts: tuple[str, ...] = ()
+    # Default base branch for PRs into the app repo (project-specific).
+    app_base_branch: str = "develop"
 
 
 def _maybe_load_dotenv() -> None:
@@ -113,4 +115,5 @@ def load_config(env: dict | None = None) -> Config:
         port=port,
         auth_token=auth_token,
         allowed_hosts=allowed_hosts,
+        app_base_branch=env.get("APP_BASE_BRANCH") or "develop",
     )
