@@ -25,6 +25,7 @@ def test_factory_defaults_to_fakes(tmp_path):
     assert isinstance(ig.git, fakes.FakeGitOps)
     assert isinstance(ig.apk, fakes.FakeApkBuilder)
     assert isinstance(ig.telegram, fakes.FakeTelegramSender)
+    assert isinstance(ig.release, fakes.FakeReleaseUploader)
 
 
 def test_factory_uses_real_telegram_when_credentials_present(tmp_path):
@@ -60,7 +61,7 @@ def test_service_open_pull_request_fake_is_audited(service):
 def test_service_build_and_deliver_apk_fake_is_audited(service):
     res = service.build_and_deliver_apk(flavor="prod")
     assert res["build"]["used_fake"] is True
-    assert res["delivery"]["used_fake"] is True
+    assert res["release"]["used_fake"] is True
     assert any(r["action"] == "build_and_deliver_apk" for r in service.audit_history())
 
 

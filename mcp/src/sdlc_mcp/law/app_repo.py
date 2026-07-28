@@ -87,6 +87,10 @@ def current_branch(repo: Path) -> str:
     return _git(repo, ["rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
 
 
+def head_sha(repo: Path) -> str:
+    return _git(repo, ["rev-parse", "--short", "HEAD"]).stdout.strip()
+
+
 def create_branch(repo: Path, name: str, base: str | None = None) -> dict:
     args = ["checkout", "-B", name] + ([base] if base else [])
     proc = _git(repo, args)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .base import ApkResult, DeliveryResult, PrResult
+from .base import ApkResult, DeliveryResult, PrResult, ReleaseResult
 
 
 class FakeGitOps:
@@ -45,5 +45,19 @@ class FakeTelegramSender:
         return DeliveryResult(
             ok=True,
             detail="fake delivery (no telegram bot token / chat id)",
+            used_fake=True,
+        )
+
+
+class FakeReleaseUploader:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    def upload(self, *, repo, tag, title, notes, file) -> ReleaseResult:
+        self.calls.append(("upload", dict(repo=repo, tag=tag, title=title, file=file)))
+        return ReleaseResult(
+            ok=True,
+            url=f"https://example.invalid/releases/{tag}",
+            detail="fake release (no app repo / gh configured)",
             used_fake=True,
         )

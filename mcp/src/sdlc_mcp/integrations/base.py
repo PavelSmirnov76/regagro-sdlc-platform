@@ -31,6 +31,14 @@ class DeliveryResult:
     used_fake: bool
 
 
+@dataclass
+class ReleaseResult:
+    ok: bool
+    url: str | None
+    detail: str
+    used_fake: bool
+
+
 class GitOps(Protocol):
     def open_pull_request(
         self, *, repo: str | None, base: str, head: str | None, title: str, body: str
@@ -45,3 +53,9 @@ class ApkBuilder(Protocol):
 
 class TelegramSender(Protocol):
     def send_document(self, *, path: str, caption: str | None = None) -> DeliveryResult: ...
+
+
+class ReleaseUploader(Protocol):
+    def upload(
+        self, *, repo: str | None, tag: str, title: str, notes: str, file: str
+    ) -> ReleaseResult: ...

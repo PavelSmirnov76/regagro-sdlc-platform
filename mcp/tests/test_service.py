@@ -96,7 +96,10 @@ def test_open_pr_defaults_base_from_config(service, monkeypatch):
         factory,
         "build",
         lambda cfg: factory.Integrations(
-            fake, fakes.FakeApkBuilder(), fakes.FakeTelegramSender()
+            fake,
+            fakes.FakeApkBuilder(),
+            fakes.FakeTelegramSender(),
+            fakes.FakeReleaseUploader(),
         ),
     )
     service.open_pull_request(title="T")  # no base -> config default
@@ -105,16 +108,20 @@ def test_open_pr_defaults_base_from_config(service, monkeypatch):
     assert fake.calls[-1][1]["base"] == "release-x"
 
 
-def test_build_apk_passes_mode(service, monkeypatch):
+def test_build_apk_delivers_via_release(service, monkeypatch):
     from sdlc_mcp.integrations import factory, fakes
 
-    fake = fakes.FakeApkBuilder()
+    apk = fakes.FakeApkBuilder()
+    rel = fakes.FakeReleaseUploader()
     monkeypatch.setattr(
         factory,
         "build",
         lambda cfg: factory.Integrations(
-            fakes.FakeGitOps(), fake, fakes.FakeTelegramSender()
+            fakes.FakeGitOps(), apk, fakes.FakeTelegramSender(), rel
         ),
     )
-    service.build_and_deliver_apk(flavor="dev", mode="debug")
-    assert fake.calls[-1][1]["mode"] == "debug"
+    out = service.build_and_deliver_apk(flavor="dev", mode="debug")
+    assert apk.calls[-1][1]["mode"] == "debug"
+    # delivered as a GitHub Release, not Telegram
+    assert rel.calls and rel.calls[-1][1]["file"].endswith("app-dev-debug.apk")
+    assert out["release"]["ok"] and out["release"]["url"]

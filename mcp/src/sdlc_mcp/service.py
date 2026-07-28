@@ -500,14 +500,25 @@ class SdlcService:
             "detail": res.detail, "used_fake": res.used_fake,
         }
 
-    def build_and_deliver_apk(self, *, flavor="prod", caption=None, mode="release") -> dict:
+    def build_and_deliver_apk(
+        self, *, flavor="prod", caption=None, mode="release", tag=None
+    ) -> dict:
+        """Build the APK and deliver it as a GitHub Release asset (server→GitHub
+        works where large files / blocked networks defeat other channels)."""
         repo = str(self.cfg.app_repo) if self.cfg.app_repo else None
         ig = self._integrations()
         build = ig.apk.build(repo=repo, flavor=flavor, mode=mode)
-        delivery = None
+
+        release = None
         if build.ok and build.apk_path:
-            delivery = ig.telegram.send_document(
-                path=build.apk_path, caption=caption or f"APK ({flavor})"
+            sha = app_repo_mod.head_sha(self._app()) if self.cfg.app_repo else "local"
+            tag = tag or f"apk-{flavor}-{mode}-{sha}"
+            release = ig.release.upload(
+                repo=repo,
+                tag=tag,
+                title=f"APK {flavor}/{mode} @ {sha}",
+                notes=caption or f"APK {flavor}/{mode}, built by sdlc-mcp.",
+                file=build.apk_path,
             )
         self._record(
             action="build_and_deliver_apk",
@@ -515,22 +526,27 @@ class SdlcService:
             extra={
                 "apk_path": build.apk_path,
                 "build_used_fake": build.used_fake,
-                "delivered": bool(delivery and delivery.ok),
-                "delivery_used_fake": delivery.used_fake if delivery else None,
+                "released": bool(release and release.ok),
+                "release_url": release.url if release else None,
+                "release_used_fake": release.used_fake if release else None,
             },
         )
         self.log.append(
             "apk_build", flavor=flavor, apk=build.apk_path,
-            delivered=bool(delivery and delivery.ok), build_used_fake=build.used_fake,
+            released=bool(release and release.ok), url=release.url if release else None,
+            build_used_fake=build.used_fake,
         )
         return {
             "build": {
                 "ok": build.ok, "apk_path": build.apk_path,
                 "used_fake": build.used_fake, "detail": build.detail,
             },
-            "delivery": (
-                {"ok": delivery.ok, "used_fake": delivery.used_fake, "detail": delivery.detail}
-                if delivery
+            "release": (
+                {
+                    "ok": release.ok, "url": release.url,
+                    "used_fake": release.used_fake, "detail": release.detail,
+                }
+                if release
                 else None
             ),
         }
