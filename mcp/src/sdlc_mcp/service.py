@@ -20,6 +20,7 @@ from .config import Config, load_config
 from .integrations import factory as integrations_factory
 from pathlib import Path
 
+from .law import app_repo as app_repo_mod
 from .law import artifacts
 from .law import entomb as entomb_mod
 from .law import frontmatter, ids, prd
@@ -425,6 +426,55 @@ class SdlcService:
             "host_pointer": report.host_pointer,
             "dry_run": report.dry_run,
         }
+
+    # --------------------------------------------------------- coding toolbelt
+    def _app(self):
+        if not self.cfg.app_repo:
+            raise ValueError("no app repo configured (set APP_REPO_PATH)")
+        return self.cfg.app_repo
+
+    def app_read_file(self, path: str) -> dict:
+        return {"path": path, "content": app_repo_mod.read_file(self._app(), path)}
+
+    def app_list_dir(self, path: str = ".") -> list[dict]:
+        return app_repo_mod.list_dir(self._app(), path)
+
+    def app_search(self, pattern: str, max_results: int = 200) -> list[dict]:
+        return app_repo_mod.search(self._app(), pattern, max_results=max_results)
+
+    def app_status(self) -> dict:
+        return {"status": app_repo_mod.status(self._app())}
+
+    def app_diff(self, staged: bool = False) -> dict:
+        return {"diff": app_repo_mod.diff(self._app(), staged=staged)}
+
+    def app_write_file(self, path: str, content: str) -> dict:
+        res = app_repo_mod.write_file(self._app(), path, content)
+        self._record(action="app_write_file", summary=path, extra=res)
+        self.log.append("app_write_file", **res)
+        return res
+
+    def app_create_branch(self, name: str, base: str | None = None) -> dict:
+        res = app_repo_mod.create_branch(self._app(), name, base)
+        self._record(action="app_create_branch", summary=name, extra=res)
+        self.log.append("app_create_branch", **res)
+        return res
+
+    def app_commit(self, message: str) -> dict:
+        res = app_repo_mod.commit_all(self._app(), message)
+        self._record(action="app_commit", summary=message, extra=res)
+        self.log.append("app_commit", **res)
+        return res
+
+    def app_test(self) -> dict:
+        res = app_repo_mod.run_check(self._app(), self.cfg.app_test_cmd)
+        self._record(
+            action="app_test",
+            summary=self.cfg.app_test_cmd,
+            extra={"code": res["code"], "ok": res["ok"]},
+        )
+        self.log.append("app_test", cmd=self.cfg.app_test_cmd, ok=res["ok"])
+        return res
 
     # ----------------------------------------------------------- integrations
     def _integrations(self):

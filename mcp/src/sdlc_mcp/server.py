@@ -264,6 +264,65 @@ def prd_propose_edit(new_text: str, why: str) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Coding toolbelt (over the app repo — read/write/search/git/test)
+# --------------------------------------------------------------------------- #
+@mcp.tool()
+def app_read_file(path: str) -> dict:
+    """Read a file from the app repo (path relative to the repo root)."""
+    return service().app_read_file(path)
+
+
+@mcp.tool()
+def app_list_dir(path: str = ".") -> list[dict]:
+    """List a directory in the app repo (name + file/dir); hides .git."""
+    return service().app_list_dir(path)
+
+
+@mcp.tool()
+def app_search(pattern: str, max_results: int = 200) -> list[dict]:
+    """Fixed-string search over tracked files (git grep): file, line, text."""
+    return service().app_search(pattern, max_results=max_results)
+
+
+@mcp.tool()
+def app_status() -> dict:
+    """`git status` (short + branch) of the app repo."""
+    return service().app_status()
+
+
+@mcp.tool()
+def app_diff(staged: bool = False) -> dict:
+    """`git diff` of the app repo (unstaged by default)."""
+    return service().app_diff(staged=staged)
+
+
+@mcp.tool()
+def app_write_file(path: str, content: str) -> dict:
+    """Create or overwrite a file in the app repo (confined to the repo root).
+    Write changes on a feature branch (app_create_branch) before committing."""
+    return service().app_write_file(path, content)
+
+
+@mcp.tool()
+def app_create_branch(name: str, base: str | None = None) -> dict:
+    """Create/switch to a feature branch in the app repo (`git checkout -B`)."""
+    return service().app_create_branch(name, base)
+
+
+@mcp.tool()
+def app_commit(message: str) -> dict:
+    """Stage all changes and commit them in the app repo. Returns the short sha."""
+    return service().app_commit(message)
+
+
+@mcp.tool()
+def app_test() -> dict:
+    """Run the project's test command (APP_TEST_CMD, e.g. `flutter test`) in the
+    app repo; returns ok/exit code and the tail of the output."""
+    return service().app_test()
+
+
+# --------------------------------------------------------------------------- #
 # Scaffold a new project
 # --------------------------------------------------------------------------- #
 @mcp.tool()

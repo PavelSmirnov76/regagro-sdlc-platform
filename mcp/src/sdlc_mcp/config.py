@@ -60,6 +60,8 @@ class Config:
     allowed_hosts: tuple[str, ...] = ()
     # Default base branch for PRs into the app repo (project-specific).
     app_base_branch: str = "develop"
+    # Command the coding toolbelt runs for app_test (project-specific).
+    app_test_cmd: str = "flutter test"
 
 
 def _maybe_load_dotenv() -> None:
@@ -116,4 +118,5 @@ def load_config(env: dict | None = None) -> Config:
         auth_token=auth_token,
         allowed_hosts=allowed_hosts,
         app_base_branch=env.get("APP_BASE_BRANCH") or "develop",
+        app_test_cmd=env.get("APP_TEST_CMD") or "flutter test",
     )
