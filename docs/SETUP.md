@@ -141,37 +141,32 @@ cp mcp/.env.example mcp/.env
 > Без `gh` или `APP_REPO_PATH` PR остаётся фейком; без валидного `GH_TOKEN`
 > `git push` пройдёт (deploy key), а `gh pr create` вернёт ошибку аутентификации.
 
-### 4.2 Telegram — доставка APK
+### 4.2 Доставка APK — GitHub Release
 
-1. Создай бота: напиши **@BotFather** в Telegram → `/newbot` → имя и username →
-   получишь **токен** вида `123456:ABC-DEF...`.
-2. Узнай **chat_id**, куда слать сборки:
-   - напиши своему боту любое сообщение (или добавь его в нужную группу и
-     напиши там);
-   - открой `https://api.telegram.org/bot<ТОКЕН>/getUpdates` в браузере;
-   - в ответе возьми `result[].message.chat.id` (для группы — отрицательное
-     число). Альтернатива: спросить `@userinfobot` свой id.
-3. Впиши в `mcp/.env`:
-   ```
-   TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
-   TELEGRAM_CHAT_ID=123456789
-   ```
-4. Проверка вручную (не обязательно):
-   ```bash
-   curl -F chat_id=<CHAT_ID> -F document=@/путь/к/файлу.txt \
-     "https://api.telegram.org/bot<ТОКЕН>/sendDocument"
-   ```
+`build_and_deliver_apk` собирает APK и заливает его как **asset в GitHub Release**
+на репозитории приложения, возвращая ссылку. Почему релиз, а не Telegram:
+сервер→GitHub работает там, где другие каналы не проходят (напр. `api.telegram.org`
+недоступен из РФ), и у asset нет практического лимита размера (у Telegram-бота —
+50 МБ, а debug-APK легко 250+ МБ).
 
-### 4.3 APK — сборка
+- Реальную загрузку включает тот же `gh` + `GH_TOKEN` (§4.1) при заданном
+  `APP_REPO_PATH`; без них — фейк (`used_fake: true`).
+- Тег по умолчанию — `apk-<flavor>-<mode>-<short-sha>`; повтор на том же коммите
+  перезаписывает asset (`gh release upload --clobber`).
+- Тулчейн сборки на сервере (Flutter+Android SDK+JDK) — раздел 8.
 
-- `build_and_deliver_apk(flavor="prod")` запускает в `agro_system`
-  `fvm flutter build apk --flavor prod --dart-define=IS_PROD=true` (или `flutter`,
-  если fvm недоступен), затем шлёт `build/app/outputs/flutter-apk/app-prod-release.apk`
-  в Telegram.
-- Для релизной сборки в приложении должна быть настроена **подпись** (release
-  keystore в `android/`). Если подпись не настроена — используй `flavor="dev"`
-  для отладочной сборки.
-- Требуется `APP_REPO_PATH` и рабочий `fvm/flutter`.
+### 4.3 APK — сборка (flavor / mode)
+
+- `build_and_deliver_apk(flavor="dev", mode="debug")` запускает в репозитории
+  приложения `flutter build apk --debug --flavor dev --dart-define=IS_PROD=false`
+  (через `fvm`, если проект пинит версию в `.fvmrc`), артефакт —
+  `build/app/outputs/flutter-apk/app-dev-debug.apk`.
+- **`mode`**: `debug` подписывается авто-debug-ключом → **не нужен release
+  keystore** (годится для шаринга). `release` требует настроенной подписи
+  (`android/key.properties` + keystore), иначе Gradle падает на
+  `SigningConfig "release" is missing … storeFile`.
+- **`flavor`**: `dev`/`prod` (см. `productFlavors` в `android/app/build.gradle`).
+- Требуется `APP_REPO_PATH` и рабочий `flutter`/`fvm`.
 
 ---
 
@@ -379,3 +374,54 @@ curl -sN --max-time 3 "https://<домен>/sse?token=<ТОКЕН>" | head -2   
   убедись, что в конфиге есть `proxy_buffering off` и длинные `proxy_read_timeout`
   (§6.4). Если в логах отлуп по `Host` — задай `MCP_ALLOWED_HOSTS=<домен>` или
   оставь пустым (DNS-rebinding защита выключается).
+
+---
+
+## 8. Тулчейн сборки APK на сервере (Flutter + Android)
+
+Нужен только для реальной сборки (`build_and_deliver_apk`). По факту стенда
+(Ubuntu 22.04, ~4 ГБ RAM). Проект пинит версию Flutter в `.fvmrc` → ставим через
+`fvm`; для `flutter build apk` нужны JDK, Android SDK (platform/build-tools/NDK по
+версиям из `android/app/build.gradle`).
+
+```bash
+# JDK + утилиты
+apt-get install -y openjdk-17-jdk unzip xz-utils git curl
+
+# fvm + пиновая версия Flutter (в каталоге проекта)
+curl -fsSL https://fvm.app/install.sh | bash
+ln -sf ~/fvm/bin/fvm /usr/local/bin/fvm        # чтобы сервис видел fvm на PATH
+cd /root/<project> && fvm install              # ставит версию из .fvmrc
+
+# Android SDK
+export ANDROID_SDK_ROOT=/opt/android-sdk JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+curl -fsSL -o /tmp/ct.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+unzip -q /tmp/ct.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+SDK="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+yes | "$SDK" --sdk_root="$ANDROID_SDK_ROOT" --licenses
+# версии — из android/app/build.gradle (compileSdk / buildToolsVersion / ndkVersion)
+"$SDK" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-36" \
+       "build-tools;35.0.0" "ndk;27.0.12077973"
+
+# связать Flutter с SDK/JDK + принять android-лицензии (в каталоге проекта)
+cd /root/<project>
+fvm flutter config --android-sdk "$ANDROID_SDK_ROOT" --jdk-dir "$JAVA_HOME"
+yes | fvm flutter doctor --android-licenses
+```
+
+- **Память.** На ~4 ГБ Gradle легко ловит OOM — добавь swap и ограничь heap
+  (не трогая репозиторий, в `~/.gradle/gradle.properties`):
+  ```bash
+  fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  printf 'org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m\norg.gradle.daemon=false\n' \
+    > /root/.gradle/gradle.properties
+  ```
+- **Codegen.** Если проект на freezed/drift/json и генерёжка **не** в репо —
+  сначала `fvm dart run build_runner build --delete-conflicting-outputs`.
+- **debug vs release.** `mode="debug"` не требует keystore (см. §4.3). Пустые
+  каталоги ассетов (`assets/.../`) git не хранит — при предупреждении «unable to
+  find directory entry» создай их (`mkdir -p`), это не фатально.
+- **Telegram из РФ.** `api.telegram.org` с РФ-сервера недоступен, поэтому доставка
+  APK — через GitHub Release (§4.2), не Telegram.
