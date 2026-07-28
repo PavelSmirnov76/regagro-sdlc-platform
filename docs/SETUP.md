@@ -110,19 +110,36 @@ cp mcp/.env.example mcp/.env
 
 ### 4.1 GitHub — создание PR
 
-1. Установи и авторизуй gh (один раз):
-   ```bash
-   brew install gh        # если ещё нет
-   gh auth login          # выбери GitHub.com → SSH → браузер
-   gh auth status         # должно показать залогиненного пользователя
-   ```
-2. Убедись, что `APP_REPO_PATH` в `mcp/.env` указывает на `agro_system`.
-3. Как это работает: `open_pull_request` в каталоге приложения делает
-   `git push -u origin <текущая ветка>` и `gh pr create --base develop --head
-   <ветка> --title … --body …`, возвращает URL PR. Ветку с изменениями готовит
-   Claude Code до вызова (правки кода → коммит на feature-ветке).
+`open_pull_request` в каталоге приложения делает `git push -u origin <ветка>` и
+`gh pr create --base <APP_BASE_BRANCH> --head <ветка> …`, возвращает URL PR. Ветку
+с изменениями готовит Claude (правки кода → коммит на feature-ветке) до вызова.
+`RealGitOps` включается, когда задан `APP_REPO_PATH` **и** на PATH есть `gh`.
 
-> Пока `gh` не авторизован или `APP_REPO_PATH` пуст — PR остаётся фейковым.
+**Push** идёт по ключу репозитория. На сервере — per-repo deploy key (см. §6):
+`origin` = прямой `git@github.com:<owner>/<repo>.git`, `core.sshCommand` указывает
+на ключ. **Создание PR** (`gh`) — по токену.
+
+1. Поставь `gh` (сервер Ubuntu — официальный apt-репозиторий cli.github.com;
+   локально — `brew install gh`).
+2. Дай `gh` токен. Проще всего — **fine-grained PAT**, ограниченный целевым репо
+   (Repository access → Only select repositories → `<repo>`; Permissions →
+   **Contents: RW**, **Pull requests: RW**), и положить его в `mcp/.env`:
+   ```
+   GH_TOKEN=github_pat_…
+   ```
+   `gh` подхватывает `GH_TOKEN` из окружения процесса MCP сам — `gh auth login`
+   не нужен. На **записываемом** сервере пиши токен, не светя значение в терминале:
+   ```bash
+   printf '%s\n' 'github_pat_…' | ssh root@server \
+     'read -r T; sed -i "/^GH_TOKEN=/d" mcp/.env; \
+      printf "GH_TOKEN=%s\n" "$T" >> mcp/.env; systemctl restart sdlc-mcp'
+   ```
+   Токен держи одноразовым/коротким и отзови, когда доступ больше не нужен.
+3. Задай **`APP_BASE_BRANCH`** в `.env` = ветка-база проекта (иначе PR метит в
+   `develop`). Для `lifestocks` это `develop_shz_rewirte`.
+
+> Без `gh` или `APP_REPO_PATH` PR остаётся фейком; без валидного `GH_TOKEN`
+> `git push` пройдёт (deploy key), а `gh pr create` вернёт ошибку аутентификации.
 
 ### 4.2 Telegram — доставка APK
 
